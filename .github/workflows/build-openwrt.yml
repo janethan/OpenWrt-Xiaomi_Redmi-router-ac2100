@@ -32,7 +32,8 @@ on:
       ssh:
         description: 'SSH connection to Actions'
         required: false
-        default: 'false'
+        type: boolean
+        default: false
 #  schedule:
 #    - cron: 0 8 */5 * *
 
@@ -96,11 +97,10 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
     - name: 激活SSH连接通道
-      uses: P3TERX/ssh2actions@v1.0.0
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      uses: owenthereal/action-upterm@v2
+      if: ${{ inputs.ssh }}
+      with:
+        limit-access-to-actor: true
 
     - name: 进行默认配置
       id: package
