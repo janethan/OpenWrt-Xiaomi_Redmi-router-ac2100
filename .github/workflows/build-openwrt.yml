@@ -39,6 +39,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
 
     steps:
     - name: 校验
@@ -80,7 +82,15 @@ jobs:
     - name: 载入自定义配置文件
       run: |
         [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        if [ ! -f "$CONFIG_FILE" ]; then
+          echo "错误：仓库中缺少 $CONFIG_FILE，无法选择 Redmi AC2100 设备目标。"
+          exit 1
+        fi
+        if ! grep -qx 'CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_redmi-router-ac2100=y' "$CONFIG_FILE"; then
+          echo "错误：$CONFIG_FILE 未选择 Redmi AC2100 设备目标。"
+          exit 1
+        fi
+        mv "$CONFIG_FILE" openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
@@ -97,6 +107,11 @@ jobs:
       run: |
         cd openwrt
         make defconfig
+        if ! grep -qx 'CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_redmi-router-ac2100=y' .config; then
+          echo "错误：defconfig 未保留 Redmi AC2100 设备目标；停止构建，避免发布错误设备的固件。"
+          grep '^CONFIG_TARGET_.*=y' .config || true
+          exit 1
+        fi
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
